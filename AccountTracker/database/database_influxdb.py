@@ -2,7 +2,7 @@ from influxdb import InfluxDBClient
 from .database import DB_TZ, BaseDBManager, Driver
 from objects import (
     BasicData,
-    TradeData,
+    TradeData3000,
     OrderData,
     AccountData
 )
@@ -14,6 +14,9 @@ def init(_: Driver, settings) -> BaseDBManager:
 
 
 class InfluxManager(BaseDBManager):
+    '''
+    plz update_account,update_basic, update_order, update_trade in order
+    '''
 
     # def __init__(self,host,port, username, password,databse):
     def __init__(self, settings: dict):
@@ -58,7 +61,6 @@ class InfluxManager(BaseDBManager):
             leverage=mkv/balance,
             EN_sym=EN_sym,
             EN_sec=EN_sec,
-
         )
 
         d = {
@@ -82,13 +84,13 @@ class InfluxManager(BaseDBManager):
         '''
         inserting = {}
 
-        for k,v in orderdata.items():
-            if v == self.order_buffer.get(k,0):
+        for k, v in orderdata.items():
+            if v == self.order_buffer.get(k, 0):
                 pass
             else:
                 inserting[k] = v
                 self.order_buffer[k] = v
-        
+
         json_body = []
 
         for k, v in inserting.items():
@@ -108,14 +110,12 @@ class InfluxManager(BaseDBManager):
                     'volume': v.volume,
                     'traded': v.traded,
                     'status': v.status.value,
-                    'reference' : v.reference
-
+                    'reference': v.reference
                 }
             }
             json_body.append(d)
 
         self.influx_client.write_points(json_body)
-
 
     def update_trade(self, tradedata: dict):
         '''
@@ -123,11 +123,11 @@ class InfluxManager(BaseDBManager):
         insert new trades only
 
         key: vt_tradeid
-        value: TradeData
+        value: TradeData3000 (add reference )
         '''
         inserting = {}
         for k, v in tradedata.items():
-            if v == self.trade_buffer.get(k,0):
+            if v == self.trade_buffer.get(k, 0):
                 pass
             else:
                 inserting[k] = v
@@ -135,6 +135,13 @@ class InfluxManager(BaseDBManager):
 
         json_body = []
         for k, v in inserting.items():
+
+            relative_order = self.order_buffer.get(v.vt_orderid, 0)
+            if relative_order:
+                ref = relative_order.reference
+            else:
+                ref = ''
+
             d = {
                 'measurement': 'account',
                 'tags': {
@@ -150,6 +157,7 @@ class InfluxManager(BaseDBManager):
                     'offset': v.offset.value,
                     'price': v.price,
                     'volume': v.volume,
+                    'reference': ref,
 
                 }
             }

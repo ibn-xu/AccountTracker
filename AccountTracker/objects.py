@@ -22,20 +22,10 @@ class BasicData():
 
 
 
-# @dataclass
-# class TradeData():
-#     reference: str 
-#     datetime : datetime
-#     contract: str 
-#     symbol  : str
-#     vol : int
-#     # amount
-#     exchange :str
-#     direction: str
-#     offset : str
-#     price : float
-#     orderid : str
-#     tradeid : str
+@dataclass
+class TradeData3000(TradeData):
+    reference: str = '' 
+
 
 # @dataclass
 # class OrderData():
