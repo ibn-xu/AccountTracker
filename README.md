@@ -13,13 +13,7 @@ Including:
 - risk ratio
 - EN_sym(effective number of symbols)
 - EN_sec(effective number of sectors)
-- black
-- metal
-- golds
-- energy_chemistry
-- argiculture
-- bond_index
-- stock_index
+
 
 
 ## trade 
@@ -27,7 +21,7 @@ Including:
 records when trade happends,(may not record in time, since trade are available during a whole trading day)
 
 
-- strategy (for algo trading)
+- reference (reference for inentify strategies)
 - datetime
 - contract 合约 e.g. rb2101
 - symbol   品种 e.g.  rb
@@ -45,7 +39,7 @@ records when trade happends,(may not record in time, since trade are available d
 
 records order when orders are sent.
 
-- strategy 
+- reference (reference for inentify strategies)
 - contract
 - symbol
 - vol

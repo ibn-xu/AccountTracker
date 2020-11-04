@@ -2,58 +2,53 @@
 defines basic data structure.
 '''
 from dataclasses import dataclass
-
-
-
-
+from datetime import datetime
+from vnpy.trader.object import (
+    TradeData,
+    OrderData,
+    AccountData
+)
 
 @dataclass
 class BasicData():
     
-    balance : float
-    mkv : float
-    leverage : float
-    risk_ratio: float
-    EN_sym: float
-    EB_sec:float
-    black : float
-    metal : float
-    golds : float
-    energy_chemistry : float
-    argiculture : float
-    bond_index : float
-    stock_index : float
+    balance : float   # 1
+    mkv : float   #  1
+    leverage : float   #  0
+    # holding positions is needed for calculate indicators below
+    risk_ratio: float   #  0
+    EN_sym: float   #   0
+    EN_sec:float   #    0
 
 
 
+# @dataclass
+# class TradeData():
+#     reference: str 
+#     datetime : datetime
+#     contract: str 
+#     symbol  : str
+#     vol : int
+#     # amount
+#     exchange :str
+#     direction: str
+#     offset : str
+#     price : float
+#     orderid : str
+#     tradeid : str
 
-@dataclass
-class TradeData():
-    strategy
-    datetime
-    contract
-    symbol  
-    vol
-    # amount
-    exchange
-    direction
-    offset
-    price
-    orderid
-    tradeid
-
-@dataclass
-class OrderData():
-    strategy 
-    contract
-    symbol
-    vol
-    # amount
-    exchange
-    direction
-    offset
-    price
-    orderid
+# @dataclass
+# class OrderData():
+#     reference : str 
+#     contract : str
+#     symbol : str
+#     vol : int
+#     # amount
+#     exchange : str
+#     direction : str
+#     offset : str
+#     price : float
+#     orderid : str
 
 
 if __name__ == "__main__":
