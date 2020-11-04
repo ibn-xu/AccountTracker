@@ -1,6 +1,7 @@
 # AccountTracker
 classes for recording financial account data, compute ratios, save to databases
 
+NOTE: currently tracking *CTP*  accounts in *basic* data.
 
 ## basic 
 

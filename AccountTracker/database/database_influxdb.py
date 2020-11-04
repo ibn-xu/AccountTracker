@@ -1,6 +1,6 @@
 from influxdb import InfluxDBClient
 from .database import DB_TZ, BaseDBManager, Driver
-from objects import (
+from ..objects import (
     BasicData,
     TradeData3000,
     OrderData,
@@ -10,23 +10,23 @@ from .database import DB_TZ
 
 
 def init(_: Driver, settings) -> BaseDBManager:
-    return
+    return InfluxManager(settings)
 
 
 class InfluxManager(BaseDBManager):
     '''
-    plz update_account,update_basic, update_order, update_trade in order
+    plz update_account,update_basic, update_order, update_trade in scequence
     '''
 
-    # def __init__(self,host,port, username, password,databse):
+    # def __init__(self,host,port, username, password,datbase):
     def __init__(self, settings: dict):
         self.influx_client = InfluxDBClient(
-            settinga['host'],
+            settings['host'],
             settings['port'],
             settings['username'],
             settings['password'],
             settings['database'])
-        self.influx_client.create_database(databse)
+        self.influx_client.create_database(settings['database'])
 
         self.order_buffer = {}  # save order objects for records
         self.trade_buffer = {}  # save trade objects for records
@@ -50,15 +50,14 @@ class InfluxManager(BaseDBManager):
                 self.available = v.available
                 self.balance = v.balance
 
-    def update_basic(self, balance, mkv, risk_ratio, positions: dict):
+    def update_basic(self, mkv, risk_ratio,EN_sym=0,EN_sec=0 ):
 
         # unable to group positions to accounts...
-        EN_sym, EN_sec = self.compute_sector(positions)
         tmp_basic = BasicData(
-            balance=balance,
+            balance=self.balance,
             mkv=mkv,
             risk_ratio=risk_ratio,
-            leverage=mkv/balance,
+            leverage=mkv/self.balance,
             EN_sym=EN_sym,
             EN_sec=EN_sec,
         )
@@ -165,11 +164,3 @@ class InfluxManager(BaseDBManager):
 
         self.influx_client.write_points(json_body)
 
-    def compute_sector(self, positions: dict):
-        EN_sym = 0
-        EN_sec = 0
-
-        return (
-            EN_sym,
-            EN_sec,
-        )
