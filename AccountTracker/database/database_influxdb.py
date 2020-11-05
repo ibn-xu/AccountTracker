@@ -26,7 +26,7 @@ class InfluxManager(BaseDBManager):
             settings['username'],
             settings['password'],
             settings['database'])
-        self.influx_client.create_database(settings['database'])
+        # self.influx_client.create_database(settings['database'])
 
         self.order_buffer = {}  # save order objects for records
         self.trade_buffer = {}  # save trade objects for records
@@ -71,7 +71,7 @@ class InfluxManager(BaseDBManager):
             'fields': tmp_basic.__dict__
         }
 
-        self.influx_client.write(d)
+        self.influx_client.write_points([d])
 
     def update_order(self, orderdata: dict):
         '''

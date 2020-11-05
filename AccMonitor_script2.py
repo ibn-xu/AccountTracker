@@ -1,12 +1,11 @@
 from time import sleep
-from typing_extensions import final
 from vnpy.app.script_trader import ScriptEngine
 import pandas as pd
 from AccountTracker.database.database_influxdb import init
 from AccountTracker.settings import database_set
 
 
-dbmanager = init(database_set)
+dbmanager = init(1,database_set)
 
 
 def run(engine: ScriptEngine):
@@ -26,7 +25,7 @@ def run(engine: ScriptEngine):
     all_contract = 0
     # 持续运行，使用strategy_active来判断是否要退出程序
     while engine.strategy_active:
-        if all_contract ==0:
+        if all_contract.empty:
             all_contract = engine.get_all_contracts(True)[['vt_symbol','size']]
         # 主观策略用统一的ID
         # 程序化交易各自有id区分
@@ -83,7 +82,7 @@ def run(engine: ScriptEngine):
             local_mkvalue = 0
 
     # risk_ratio
-        holding_pnl = sum([a.pnl for a in current_pos])
+        holding_pnl = sum([a.pnl for (_,a) in current_pos.iterrows()])
         risk_ratio2 = (bal - ava - holding_pnl) / bal
         risk_ratio1 = 1 - ava / bal
 
