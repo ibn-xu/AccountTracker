@@ -12,6 +12,9 @@ from .database import DB_TZ
 def init(_: Driver, settings) -> BaseDBManager:
     return InfluxManager(settings)
 
+measurement_name_basic = 'account_basic'
+measurement_name_trade = 'account_trade'
+measurement_name_order =  'account_order'
 
 class InfluxManager(BaseDBManager):
     '''
@@ -63,10 +66,9 @@ class InfluxManager(BaseDBManager):
         )
 
         d = {
-            'measurement': 'account',
+            'measurement': measurement_name_basic,
             'tags': {
                 'account': self.acc_name,
-                'type': 'basic'
             },
             'fields': tmp_basic.__dict__
         }
@@ -94,27 +96,27 @@ class InfluxManager(BaseDBManager):
 
         for k, v in inserting.items():
             d = {
-                'measurement': 'account',
+                'measurement': measurement_name_order,
                 'tags': {
                     'account': self.acc_name,
-                    'type': 'order'
                 },
-                'time': DB_TZ.localize(v.datetime),
+                'time': v.datetime,
                 'fields': {
                     'vt_symbol': v.vt_symbol,
                     'vt_orderid': v.vt_orderid,
                     'direction': v.direction.value,
                     'offset': v.offset.value,
                     'price': v.price,
-                    'volume': v.volume,
+                    'volume': int(v.volume),
                     'traded': v.traded,
                     'status': v.status.value,
                     'reference': v.reference
                 }
             }
             json_body.append(d)
-
-        self.influx_client.write_points(json_body)
+        if json_body:
+            self.influx_client.write_points(json_body)
+            print(f'write {len(json_body)} orders')
 
     def update_trade(self, tradedata: dict):
         '''
@@ -135,32 +137,37 @@ class InfluxManager(BaseDBManager):
         json_body = []
         for k, v in inserting.items():
 
-            relative_order = self.order_buffer.get(v.vt_orderid, 0)
-            if relative_order:
-                ref = relative_order.reference
+            related_order = self.order_buffer.get(v.vt_orderid, 0)
+            if related_order:
+                ref = related_order.reference
             else:
                 ref = ''
 
             d = {
-                'measurement': 'account',
+                'measurement': measurement_name_trade,
                 'tags': {
                     'account': self.acc_name,
-                    'type': 'trade'
                 },
-                'time': DB_TZ.localize(v.datetime),
+                'time': v.datetime,
                 'fields': {
-                    'symbol': v.vt_symbol,
-                    'orderid': v.vt_orderid,
-                    'tradeid': v.vt_tradeid,
+                    'vt_symbol': v.vt_symbol,
+                    'vt_orderid': v.vt_orderid,
+                    'vt_tradeid': v.vt_tradeid,
                     'direction': v.direction.value,
                     'offset': v.offset.value,
                     'price': v.price,
-                    'volume': v.volume,
+                    'volume': int(v.volume),
                     'reference': ref,
 
                 }
             }
             json_body.append(d)
 
-        self.influx_client.write_points(json_body)
 
+        if json_body:
+            self.influx_client.write_points(json_body)
+            print(f'write {len(json_body)} trades')
+
+
+    def regular_work(self):
+        pass
