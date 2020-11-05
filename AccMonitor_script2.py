@@ -22,7 +22,7 @@ def run(engine: ScriptEngine):
     # for comparing with latest records
 
     __subscribe_list = []
-    all_contract = 0
+    all_contract = pd.DataFrame()
     # 持续运行，使用strategy_active来判断是否要退出程序
     while engine.strategy_active:
         if all_contract.empty:
