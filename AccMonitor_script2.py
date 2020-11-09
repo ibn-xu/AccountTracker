@@ -48,7 +48,7 @@ def check_timestamp(d:dict):
         sorted_key.sort()
 
         for k in sorted_key:
-            v = sorted_key[k]
+            v = d[k]
             if v.datetime in unique_timestamp:
                 v.datetime += delta * i
                 i+=1
