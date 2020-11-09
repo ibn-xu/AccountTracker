@@ -21,12 +21,13 @@ def tradeTime_TRANS(orderd:dict,traded:dict):
 
     if trade with orderid cannot be founded in orderd, exception will raise
     '''
-    for k,v in traded.items():
-        tmp_order = orderd[v.vt_orderid]
-        if v.datetime.time() > NIGHT_START or v.datetime.time() < NIGHT_END:
-            # needs modify
-            tmp_order_dt = tmp_order.datetime
-            traded[k].datetime = v.datetime.replace(year=tmp_order_dt.year,month=tmp_order_dt.month,day=tmp_order_dt.day)
+    if orderd:
+        for k,v in traded.items():
+            tmp_order = orderd[v.vt_orderid]
+            if v.datetime.time() > NIGHT_START or v.datetime.time() < NIGHT_END:
+                # needs modify
+                tmp_order_dt = tmp_order.datetime
+                traded[k].datetime = v.datetime.replace(year=tmp_order_dt.year,month=tmp_order_dt.month,day=tmp_order_dt.day)
 
 
     
@@ -39,17 +40,18 @@ def check_timestamp(d:dict):
 
     +1ms +2ms and so on.
     '''
-    unique_timestamp = []
+    if d:
+        unique_timestamp = []
 
-    i = 1
-    sorted_key = list(d.keys()).sort()
+        i = 1
+        sorted_key = list(d.keys()).sort()
 
-    for k in sorted_key:
-        v = sorted_key[k]
-        if v.datetime in unique_timestamp:
-            v.datetime += delta * i
-            i+=1
-        unique_timestamp.append(v.datetime)
+        for k in sorted_key:
+            v = sorted_key[k]
+            if v.datetime in unique_timestamp:
+                v.datetime += delta * i
+                i+=1
+            unique_timestamp.append(v.datetime)
 
 
 

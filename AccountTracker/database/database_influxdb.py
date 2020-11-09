@@ -83,6 +83,8 @@ class InfluxManager(BaseDBManager):
         key: vt_orderid
         value: OrderData
         '''
+        if orderdata is None:
+            return
         inserting = {}
 
         for k, v in orderdata.items():
@@ -126,6 +128,8 @@ class InfluxManager(BaseDBManager):
         key: vt_tradeid
         value: TradeData3000 (add reference )
         '''
+        if tradedata is None:
+            return
         inserting = {}
         for k, v in tradedata.items():
             if v == self.trade_buffer.get(k, 0):
