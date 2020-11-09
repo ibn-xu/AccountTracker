@@ -3,9 +3,55 @@ from vnpy.app.script_trader import ScriptEngine
 import pandas as pd
 from AccountTracker.database.database_influxdb import init
 from AccountTracker.settings import database_set
+import datetime
 
+
+
+NIGHT_START = datetime.time(20,50,0)
+NIGHT_END = datetime.time(3,0,0)
+
+delta = datetime.timedelta(milliseconds=1)
 
 dbmanager = init(1,database_set)
+
+
+def tradeTime_TRANS(orderd:dict,traded:dict):
+    '''
+    modify trade date
+
+    if trade with orderid cannot be founded in orderd, exception will raise
+    '''
+    for k,v in traded.items():
+        tmp_order = orderd[v.vt_orderid]
+        if v.datetime.time() > NIGHT_START or v.datetime.time() < NIGHT_END:
+            # needs modify
+            tmp_order_dt = tmp_order.datetime
+            traded[k].datetime = v.datetime.replace(year=tmp_order_dt.year,month=tmp_order_dt.month,day=tmp_order_dt.day)
+
+
+    
+
+def check_timestamp(d:dict):
+    '''
+    input tradedict and/or orderdict.
+
+    if data in d has same timestamp, modify them to avoid overriding data in influxdb.
+
+    +1ms +2ms and so on.
+    '''
+    unique_timestamp = []
+
+    i = 1
+    sorted_key = list(d.keys()).sort()
+
+    for k in sorted_key:
+        v = sorted_key[k]
+        if v.datetime in unique_timestamp:
+            v.datetime += delta * i
+            i+=1
+        unique_timestamp.append(v.datetime)
+
+
 
 
 def run(engine: ScriptEngine):
@@ -16,6 +62,17 @@ def run(engine: ScriptEngine):
     3. while循环的维护，请通过engine.strategy_active状态来判断，实现可控退出
 
     监控账户，保存数据到influxdb
+
+    ****    CTP接口   ****
+    A. order日期时间是报单的实际时间，但是trade回报中，夜盘成交的日期是交易日的日期，而不是实际成家的日期（时间是准确的）
+
+    因此需要做一个转换：
+    1. 夜盘成交 => 必然是夜盘挂单 => 根据orderid调整日期（不改时间）
+    2. 白天成交 => 不修改
+
+    B. trade中，多笔成交可能在同一个时间戳下返回，因此后写入的trade会覆盖之前的一个记录：
+    1. 写入之前，检查时间是否相同，直接修改时间：500ms之内比如+1ms，+2ms等
+
 
     """
 
@@ -104,11 +161,16 @@ def run(engine: ScriptEngine):
 
 
 
-    # order data
+    # order & trade data
         order_dict = engine.main_engine.engines['oms'].orders.copy()
-        dbmanager.update_order(orderdata=order_dict)
-    # trade data
         trade_dict = engine.main_engine.engines['oms'].trades.copy()
+
+        check_timestamp(order_dict)
+        check_timestamp(trade_dict)
+
+        tradeTime_TRANS(order_dict,trade_dict)
+    
+        dbmanager.update_order(orderdata=order_dict)
         dbmanager.update_trade(tradedata=trade_dict)
 
 
