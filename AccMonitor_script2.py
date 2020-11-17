@@ -93,6 +93,7 @@ def run(engine: ScriptEngine):
         df = engine.get_all_accounts()
         bal = df[0].balance
         ava = df[0].available
+        EN_sym = 0.0
 
         # mkv
 
@@ -133,8 +134,8 @@ def run(engine: ScriptEngine):
 
             for f in final_df['weights']:
                 s += f**2
-
-            EN_sym = 1/ s
+            if s > 0:
+                EN_sym = 1/ s
 
 
             # return local_mkvalue
