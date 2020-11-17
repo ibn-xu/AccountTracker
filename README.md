@@ -13,7 +13,7 @@ Including:
 - leverage (mkv / balance)
 - risk ratio
 - EN_sym(effective number of symbols)
-- EN_sec(effective number of sectors)
+- ~~EN_sec(effective number of sectors)~~
 
 
 
