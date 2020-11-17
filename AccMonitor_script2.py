@@ -4,14 +4,14 @@ import pandas as pd
 from AccountTracker.database.database_influxdb import init
 from AccountTracker.settings import database_set
 import datetime
+import pathlib
 
 
-
+DAY_END = datetime.time(15,15)
 NIGHT_START = datetime.time(20,50,0)
 NIGHT_END = datetime.time(3,0,0)
 
 delta = datetime.timedelta(milliseconds=1)
-
 dbmanager = init(1,database_set)
 
 
@@ -141,7 +141,7 @@ def run(engine: ScriptEngine):
         else:
             local_mkvalue = 0
 
-    # risk_ratio
+      # risk_ratio
         holding_pnl = sum([a.pnl for (_,a) in current_pos.iterrows()])
         risk_ratio2 = (bal - ava - holding_pnl) / bal
         risk_ratio1 = 1 - ava / bal
@@ -152,19 +152,19 @@ def run(engine: ScriptEngine):
             risk_ratio = risk_ratio2
 
 
-    # acc data
+      # acc data
 
         acc_dict = engine.main_engine.engines['oms'].accounts.copy()
         dbmanager.update_account(accounts=acc_dict)
 
 
-    # basic data
+        # basic data
         # pos_dict = engine.main_engine.engines['oms'].positions.copy()
         dbmanager.update_basic(mkv=local_mkvalue,risk_ratio=risk_ratio,EN_sym=EN_sym)
 
 
 
-    # order & trade data
+      # order & trade data
         order_dict = engine.main_engine.engines['oms'].orders.copy()
         trade_dict = engine.main_engine.engines['oms'].trades.copy()
 
@@ -180,6 +180,27 @@ def run(engine: ScriptEngine):
         # 等待x秒进入下一轮
         sleep(10)
 
+    else:
 
+        p = pathlib.Path('./positionRecords')
+        fmt_str_ts = '%Y%m%d'
 
+        if  p.is_dir():
+            pass
+        else:
+            p.mkdir()
+        
+        current_dt = datetime.datetime.now()
+        current_time = current_dt.time()
 
+        if DAY_END < current_time < NIGHT_START:
+            # save position
+            initial_pos = engine.get_all_positions(True)
+            contracts_bool = initial_pos['vt_symbol'].str.contain
+            current_pos = initial_pos[~contracts_bool]
+            filename = current_dt.strftime(fmt_str_ts)+'.json'
+            if current_pos.any():
+                current_pos.to_json(p / filename)
+            engine.write_log('position recorded...')
+        else:
+            engine.write_log('Not time for position records.')

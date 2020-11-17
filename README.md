@@ -52,5 +52,8 @@ records order when orders are sent.
 - orderid
 
 
+## position record
 
+- save daily position under *positionRecords* folder(auto create).
+- named by date: '20201102.json'
 
