@@ -197,10 +197,10 @@ def run(engine: ScriptEngine):
         if DAY_END < current_time < NIGHT_START:
             # save position
             initial_pos = engine.get_all_positions(True)
-            contracts_bool = initial_pos['vt_symbol'].str.contain
+            contracts_bool = initial_pos['vt_symbol'].str.contains('&')
             current_pos = initial_pos[~contracts_bool]
             filename = current_dt.strftime(fmt_str_ts)+'.json'
-            if current_pos.any():
+            if current_pos.any().any():
                 current_pos.to_json(p / filename)
             engine.write_log('position recorded...')
         else:
