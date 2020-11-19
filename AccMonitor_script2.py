@@ -15,9 +15,10 @@ NIGHT_END = datetime.time(3, 0, 0)
 delta = datetime.timedelta(milliseconds=1)
 dbmanager = init(1, database_set)
 
-# Get public holidays data from Shanghai Stock Exchange
+# Get public sessions data from Shanghai Stock Exchange
 cn_calendar = trading_calendars.get_calendar('XSHG')
-holidays = [x.to_pydatetime() for x in cn_calendar.precomputed_holidays]
+# sessions is datetime.date
+sessions = [x.to_pydatetime().date() for x in cn_calendar.all_sessions]
 
 
 def tradeTime_TRANS(dd: dict):
@@ -32,9 +33,9 @@ def tradeTime_TRANS(dd: dict):
 
             if v.datetime.time() > NIGHT_START or v.datetime.time() < NIGHT_END:
                 # needs modify
-                tmp_index = holidays.index(v.datetime.date())
-                actual_date = holidays[tmp_index-1]
-                dd[k].datetime = v.datetime.replace(year=actual_date.year, month=actual_date.month, day=actual_date.day))
+                tmp_index = sessions.index(v.datetime.date())
+                actual_date = sessions[tmp_index-1]
+                dd[k].datetime = v.datetime.replace(year=actual_date.year, month=actual_date.month, day=actual_date.day)
 
 
 
