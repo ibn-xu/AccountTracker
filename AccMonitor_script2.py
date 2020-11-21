@@ -35,9 +35,8 @@ def tradeTime_TRANS(dd: dict):
                 # needs modify
                 tmp_index = sessions.index(v.datetime.date())
                 actual_date = sessions[tmp_index-1]
-                dd[k].datetime = v.datetime.replace(year=actual_date.year, month=actual_date.month, day=actual_date.day)
-
-
+                dd[k].datetime = v.datetime.replace(
+                    year=actual_date.year, month=actual_date.month, day=actual_date.day)
 
 
 def check_timestamp(d: dict):
@@ -49,20 +48,18 @@ def check_timestamp(d: dict):
     +1ms +2ms and so on.
     '''
     if d:
-        unique_timestamp=[]
+        unique_timestamp = []
 
-        i=1
-        sorted_key=list(d.keys())
+        i = 1
+        sorted_key = list(d.keys())
         sorted_key.sort()
 
         for k in sorted_key:
-            v=d[k]
+            v = d[k]
             if v.datetime in unique_timestamp:
                 v.datetime += delta * i
                 i += 1
             unique_timestamp.append(v.datetime)
-
-
 
 
 def run(engine: ScriptEngine):
@@ -89,97 +86,103 @@ def run(engine: ScriptEngine):
 
     # for comparing with latest records
 
-    __subscribe_list=[]
-    all_contract=pd.DataFrame()
+    __subscribe_list = []
+    all_contract = pd.DataFrame()
     # 持续运行，使用strategy_active来判断是否要退出程序
     while engine.strategy_active:
         if all_contract.empty:
-            all_contract=engine.get_all_contracts(True)[['vt_symbol', 'size']]
+            all_contract = engine.get_all_contracts(
+                True)[['vt_symbol', 'size']]
         # 主观策略用统一的ID
         # 程序化交易各自有id区分
 
-        df=engine.get_all_accounts()
-        bal=df[0].balance
-        ava=df[0].available
-        EN_sym=0.0
+        df = engine.get_all_accounts()
+        bal = df[0].balance
+        ava = df[0].available
+        EN_sym = 0.0
 
         # mkv
 
-        initial_pos=engine.get_all_positions(True)
-        # 过滤不正常合约（套利合约）
-        contracts_bool=initial_pos['vt_symbol'].str.contains('&')
-        current_pos=initial_pos[~contracts_bool]
-        current_pos_str=current_pos.to_json(
-            orient = 'columns', force_ascii = False)
-        if not (current_pos is None):
-            current_contract=list(current_pos['vt_symbol'])
+        initial_pos = engine.get_all_positions(True)
+        if initial_pos:
+            # 过滤不正常合约（套利合约）
+            contracts_bool = initial_pos['vt_symbol'].str.contains('&')
+            current_pos = initial_pos[~contracts_bool]
+            current_pos_str = current_pos.to_json(
+                orient='columns', force_ascii=False)
+            if not (current_pos is None):
+                current_contract = list(current_pos['vt_symbol'])
 
-            # 有差异的合约
-            diff_contract=[
-                x for x in current_contract if x not in __subscribe_list]
-            if len(diff_contract) > 0:
-                engine.subscribe(vt_symbols = diff_contract)
-                __subscribe_list[:] = current_contract[: ]
-                sleep(1)
+                # 有差异的合约
+                diff_contract = [
+                    x for x in current_contract if x not in __subscribe_list]
+                if len(diff_contract) > 0:
+                    engine.subscribe(vt_symbols=diff_contract)
+                    __subscribe_list[:] = current_contract[:]
+                    sleep(1)
 
-            # 获取持仓信息： 手数 与 最新价
-            latest_prices = engine.get_ticks(vt_symbols = __subscribe_list, use_df =True)[['last_price', 'vt_symbol']]
-            while not latest_prices.all().all():
-                sleep(0.2)
-                latest_prices = engine.get_ticks(vt_symbols = __subscribe_list, use_df =True)[['last_price', 'vt_symbol']]
+                # 获取持仓信息： 手数 与 最新价
+                latest_prices = engine.get_ticks(vt_symbols=__subscribe_list, use_df=True)[
+                    ['last_price', 'vt_symbol']]
+                while not latest_prices.all().all():
+                    sleep(0.2)
+                    latest_prices = engine.get_ticks(vt_symbols=__subscribe_list, use_df=True)[
+                        ['last_price', 'vt_symbol']]
 
-            latest_volumns= current_pos[['vt_symbol', 'volume', 'direction']]
+                latest_volumns = current_pos[[
+                    'vt_symbol', 'volume', 'direction']]
 
+                tmp_df = pd.merge(
+                    left=latest_prices, right=latest_volumns, on='vt_symbol', how='inner')
+                final_df = pd.merge(
+                    left=tmp_df, right=all_contract, on='vt_symbol', how='inner')
+                final_df['mk_value'] = final_df['last_price'] * \
+                    final_df['volume'] * final_df['size']
+                local_mkvalue = final_df['mk_value'].sum()
 
-            tmp_df= pd.merge(left = latest_prices, right =latest_volumns, on='vt_symbol', how='inner')
-            final_df= pd.merge(left = tmp_df, right =all_contract, on='vt_symbol', how='inner')
-            final_df['mk_value'] = final_df['last_price'] * \
-                final_df['volume'] * final_df['size']
-            local_mkvalue= final_df['mk_value'].sum()
+                # EN calculate
 
-            # EN calculate
+                final_df['weights'] = final_df['mk_value'] / local_mkvalue
 
-            final_df['weights']= final_df['mk_value'] / local_mkvalue
+                s = 0
 
-            s= 0
+                for f in final_df['weights']:
+                    s += f**2
+                if s > 0:
+                    EN_sym = 1 / s
 
-            for f in final_df['weights']:
-                s += f**2
-            if s > 0:
-                EN_sym= 1 / s
+                # return local_mkvalue
+            else:
+                local_mkvalue = 0
 
+            # risk_ratio
+            holding_pnl = sum([a.pnl for (_, a) in current_pos.iterrows()])
+            risk_ratio2 = (bal - ava - holding_pnl) / bal
+            risk_ratio1 = 1 - ava / bal
 
-            # return local_mkvalue
+            if holding_pnl < 0:
+                risk_ratio = risk_ratio1
+            else:
+                risk_ratio = risk_ratio2
+
         else:
-            local_mkvalue= 0
+            # no position holing
+            risk_ratio = 0.0
+            local_mkvalue = 0.0
 
-      # risk_ratio
-        holding_pnl= sum([a.pnl for (_, a) in current_pos.iterrows()])
-        risk_ratio2= (bal - ava - holding_pnl) / bal
-        risk_ratio1= 1 - ava / bal
+        # acc data
 
-        if holding_pnl < 0:
-            risk_ratio= risk_ratio1
-        else:
-            risk_ratio= risk_ratio2
-
-
-      # acc data
-
-        acc_dict= engine.main_engine.engines['oms'].accounts.copy()
-        dbmanager.update_account(accounts = acc_dict)
-
+        acc_dict = engine.main_engine.engines['oms'].accounts.copy()
+        dbmanager.update_account(accounts=acc_dict)
 
         # basic data
         # pos_dict = engine.main_engine.engines['oms'].positions.copy()
-        dbmanager.update_basic(mkv = local_mkvalue,
-                               risk_ratio = risk_ratio, EN_sym = EN_sym)
-
-
+        dbmanager.update_basic(mkv=local_mkvalue,
+                               risk_ratio=risk_ratio, EN_sym=EN_sym)
 
       # order & trade data
-        order_dict=engine.main_engine.engines['oms'].orders.copy()
-        trade_dict=engine.main_engine.engines['oms'].trades.copy()
+        order_dict = engine.main_engine.engines['oms'].orders.copy()
+        trade_dict = engine.main_engine.engines['oms'].trades.copy()
 
         check_timestamp(order_dict)
         check_timestamp(trade_dict)
@@ -187,34 +190,32 @@ def run(engine: ScriptEngine):
         tradeTime_TRANS(order_dict)
         tradeTime_TRANS(trade_dict)
 
-        dbmanager.update_order(orderdata = order_dict)
-        dbmanager.update_trade(tradedata = trade_dict)
-
+        dbmanager.update_order(orderdata=order_dict)
+        dbmanager.update_trade(tradedata=trade_dict)
 
         # 等待x秒进入下一轮
         sleep(10)
 
     else:
 
-        p=pathlib.Path('./positionRecords')
-        fmt_str_ts='%Y%m%d'
+        p = pathlib.Path('./positionRecords')
+        fmt_str_ts = '%Y%m%d'
 
         if p.is_dir():
             pass
         else:
             p.mkdir()
 
-        current_dt=datetime.datetime.now()
-        current_time=current_dt.time()
+        current_dt = datetime.datetime.now()
+        current_time = current_dt.time()
 
-        if DAY_END < current_time < NIGHT_START:
-            # save position
-            initial_pos=engine.get_all_positions(True)
-            contracts_bool=initial_pos['vt_symbol'].str.contains('&')
-            current_pos=initial_pos[~contracts_bool]
-            filename=current_dt.strftime(fmt_str_ts)+'.json'
-            if current_pos.any().any():
-                current_pos.to_json(p / filename)
-            engine.write_log('position recorded...')
-        else:
-            engine.write_log('Not time for position records.')
+        # save position
+        initial_pos = engine.get_all_positions(True)
+        if initial_pos:
+            if DAY_END < current_time < NIGHT_START:
+                contracts_bool = initial_pos['vt_symbol'].str.contains('&')
+                current_pos = initial_pos[~contracts_bool]
+                filename = current_dt.strftime(fmt_str_ts)+'.json'
+                if current_pos.any().any():
+                    current_pos.to_json(p / filename)
+                engine.write_log('position recorded...')
