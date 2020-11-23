@@ -104,7 +104,7 @@ def run(engine: ScriptEngine):
         # mkv
 
         initial_pos = engine.get_all_positions(True)
-        if initial_pos:
+        if not (initial_pos is None):
             # 过滤不正常合约（套利合约）
             contracts_bool = initial_pos['vt_symbol'].str.contains('&')
             current_pos = initial_pos[~contracts_bool]
