@@ -211,7 +211,7 @@ def run(engine: ScriptEngine):
 
         # save position
         initial_pos = engine.get_all_positions(True)
-        if initial_pos:
+        if not (initial_pos is None):
             if DAY_END < current_time < NIGHT_START:
                 contracts_bool = initial_pos['vt_symbol'].str.contains('&')
                 current_pos = initial_pos[~contracts_bool]
