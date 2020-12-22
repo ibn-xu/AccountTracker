@@ -14,6 +14,8 @@ Including:
 - risk ratio
 - EN_sym(effective number of symbols)
 - ~~EN_sec(effective number of sectors)~~
+- pnl : floating gain/loss of futures
+- option_pnl : floating gain/loss of options
 
 
 

@@ -18,6 +18,8 @@ class BasicData():
     # holding positions is needed for calculate indicators below
     risk_ratio: float   #  0
     EN_sym: float   #   0
+    pnl: float
+    option_pnl : float
 
 
 

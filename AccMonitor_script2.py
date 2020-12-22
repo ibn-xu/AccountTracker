@@ -1,11 +1,12 @@
 from time import sleep
+import pathlib
+import datetime
+import trading_calendars
 from vnpy.app.script_trader import ScriptEngine
+from vnpy.trader.constant import Direction
 import pandas as pd
 from AccountTracker.database.database_influxdb import init
 from AccountTracker.settings import database_set
-import datetime
-import pathlib
-import trading_calendars
 
 
 DAY_END = datetime.time(15, 15)
@@ -19,6 +20,22 @@ dbmanager = init(1, database_set)
 cn_calendar = trading_calendars.get_calendar('XSHG')
 # sessions is datetime.date
 sessions = [x.to_pydatetime().date() for x in cn_calendar.all_sessions]
+
+
+def option_picker(s: str):
+    '''
+    s: rb2101.SHFE(vt_symbol)
+
+    if s is option, return basic str e.g: DCE.i2009-C-650
+    if s is SPC, skip it(tqsdk get no kline). e.g DCE.SPC a2101&m2101 
+    '''
+
+    if '&' in s:
+        return None
+    if len(s) > 12:
+        # options
+        print('场内期权', s)
+        return s
 
 
 def tradeTime_TRANS(dd: dict):
@@ -81,7 +98,6 @@ def run(engine: ScriptEngine):
     B. trade中，多笔成交可能在同一个时间戳下返回，因此后写入的trade会覆盖之前的一个记录：
     1. 写入之前，检查时间是否相同，直接修改时间：500ms之内比如+1ms，+2ms等
 
-
     """
 
     # for comparing with latest records
@@ -90,9 +106,15 @@ def run(engine: ScriptEngine):
     all_contract = pd.DataFrame()
     # 持续运行，使用strategy_active来判断是否要退出程序
     while engine.strategy_active:
+
+        futures_pnl = 0.0
+        option_pnl = 0.0
+
         if all_contract.empty:
             all_contract = engine.get_all_contracts(
                 True)[['vt_symbol', 'size']]
+            
+            contract_size = dict(zip(all_contract['vt_symbol'],all_contract['size']))
         # 主观策略用统一的ID
         # 程序化交易各自有id区分
 
@@ -108,8 +130,10 @@ def run(engine: ScriptEngine):
             # 过滤不正常合约（套利合约）
             contracts_bool = initial_pos['vt_symbol'].str.contains('&')
             current_pos = initial_pos[~contracts_bool]
-            current_pos_str = current_pos.to_json(
-                orient='columns', force_ascii=False)
+
+            futures_pnl = current_pos['pnl'].sum()
+            # current_pos_str = current_pos.to_json(
+            #     orient='columns', force_ascii=False)
             if not (current_pos is None):
                 current_contract = list(current_pos['vt_symbol'])
 
@@ -152,6 +176,22 @@ def run(engine: ScriptEngine):
                     EN_sym = 1 / s
 
                 # return local_mkvalue
+
+                # option_pnl calculate
+                for ix,row in current_pos.iterrows():
+                    if option_picker(row['vt_symbol']):
+                        tick = engine.get_tick(row['vt_symbol'])
+
+                        if row['direction'] == Direction.LONG:
+                            posdir = 1
+                        elif row['direction'] == Direction.SHORT:
+                            posdir = -1
+                        else:
+                            posdir = 0
+                        
+                        option_pnl +=(tick.last_price - row['price']) * row['volume'] * posdir * contract_size[row['vt_symbol']]
+
+
             else:
                 local_mkvalue = 0
 
@@ -164,6 +204,7 @@ def run(engine: ScriptEngine):
                 risk_ratio = risk_ratio1
             else:
                 risk_ratio = risk_ratio2
+
 
         else:
             # no position holing
@@ -178,7 +219,10 @@ def run(engine: ScriptEngine):
         # basic data
         # pos_dict = engine.main_engine.engines['oms'].positions.copy()
         dbmanager.update_basic(mkv=local_mkvalue,
-                               risk_ratio=risk_ratio, EN_sym=EN_sym)
+                               risk_ratio=risk_ratio, 
+                               EN_sym=EN_sym,
+                               pnl=futures_pnl,
+                               option_pnl=option_pnl)
 
       # order & trade data
         order_dict = engine.main_engine.engines['oms'].orders.copy()
