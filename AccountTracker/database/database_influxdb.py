@@ -1,4 +1,5 @@
 from influxdb import InfluxDBClient
+from datetime import datetime
 from .database import DB_TZ, BaseDBManager, Driver
 from ..objects import (
     BasicData,
@@ -12,9 +13,12 @@ from .database import DB_TZ
 def init(_: Driver, settings) -> BaseDBManager:
     return InfluxManager(settings)
 
+
 measurement_name_basic = 'account_basic'
 measurement_name_trade = 'account_trade'
-measurement_name_order =  'account_order'
+measurement_name_order = 'account_order'
+measurement_name_netvalue = 'product_nv'
+
 
 class InfluxManager(BaseDBManager):
     '''
@@ -29,6 +33,7 @@ class InfluxManager(BaseDBManager):
             settings['username'],
             settings['password'],
             settings['database'])
+        self.database = settings['database']
         # self.influx_client.create_database(settings['database'])
 
         self.order_buffer = {}  # save order objects for records
@@ -44,6 +49,19 @@ class InfluxManager(BaseDBManager):
     def save_data(self):
         pass
 
+    def update_nv(self, product, nv):
+        d = {
+            'measurement': measurement_name_netvalue,
+            'tags': {
+                'product': product,
+            },
+            'fields': {
+                'nv': nv
+            }
+        }
+
+        self.influx_client.write_points([d])
+
     def update_account(self, accounts: dict):
         # account data contains balance , frozen and available
         self.account_dict = accounts
@@ -53,7 +71,7 @@ class InfluxManager(BaseDBManager):
                 self.available = v.available
                 self.balance = v.balance
 
-    def update_basic(self, mkv, risk_ratio,EN_sym=0.0,pnl=0.0,option_pnl=0.0):
+    def update_basic(self, mkv, risk_ratio, EN_sym=0.0, pnl=0.0, option_pnl=0.0):
 
         # unable to group positions to accounts...
         tmp_basic = BasicData(
@@ -168,11 +186,50 @@ class InfluxManager(BaseDBManager):
             }
             json_body.append(d)
 
-
         if json_body:
             self.influx_client.write_points(json_body)
             print(f'write {len(json_body)} trades')
 
-
     def regular_work(self):
         pass
+
+    def get_nv(self, product_name, start: datetime, end: datetime = datetime.now()):
+
+        start = DB_TZ.localize(start)
+        end = DB_TZ.localize(end)
+
+        query_str = ("select * from product_nv"
+                     "where product=$product_name"
+                     f"and time >= '{start.isoformat()}'"
+                     f"and time <= '{end.isoformat()}';"
+                     )
+        bind_params = {
+            "product_name": product_name
+        }
+        result = self.influx_client.query(query_str, bind_params=bind_params)
+        points = result.get_points()
+
+        data = []
+        for d in points:
+            data.append(d['nv'])
+        return data
+
+    def get_pnl(self):
+        '''
+        返回的是[dict]
+        '''
+        query_str = ("select pnl from account_basic "
+                     f"where time >= now()-15m;"
+                     )
+
+        result = self.influx_client.query(query_str)
+        points = result.get_points()
+
+        pnlData = []
+        for p in points:
+            pnlData.append(p['pnl'])
+
+        if pnlData:
+            return pnlData[-1]
+        else:
+            return 0.0

@@ -1,4 +1,4 @@
-# AccountTracker
+# AccountTracker : AccMonitor_script2.py
 classes for recording financial account data, compute ratios, save to databases
 
 NOTE: currently tracking *CTP*  accounts in *basic* data.
@@ -58,4 +58,23 @@ records order when orders are sent.
 
 - save daily position under *positionRecords* folder(auto create).
 - named by date: '20201102.json'
+
+
+# OTC pnl & Net value : NV_otc.py
+
+## OTC pnl
+
+- read position table:
+    - get pre-settlement price for pre-day balance
+    - rt price of underlying contract for **pnl**
+- read outsource data:
+    - forengn account (chg)
+    - total balance (pre-day)
+    - product share
+- **Net value** calculate & write
+    - read *futures pnl* 
+    - calculate NV, save to *influxdb*
+
+
+# Net Value Alarm:
 
