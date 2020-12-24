@@ -1,2 +1,2 @@
-title,underlying,start,end,direction,t,v,type,cp,k,premium,nominal,multi,volumn,foreign,total_balance,shares
-南华,SHFE.cu2102,10/27/2020,12/31/2020,买入,0.0288,0.1864,欧式,-1,50300,-29624.28,28,5,5.6,2456,9103524.31,9266270.64
+title,underlying,start,end,direction,t,v,type,cp,k,premium,nominal,multi,volumn,foreign,total_balance,shares,presettle_futures
+南华,SHFE.cu2102,10/27/2020,12/31/2020,买入,0.0288,0.1864,欧式,-1,50300,-29624.28,28,5,5.6,2456,9103524.31,9266270.64,2492397.52

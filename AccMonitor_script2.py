@@ -100,6 +100,7 @@ def run(engine: ScriptEngine):
 
     """
 
+    outsource_df = pd.read_csv('outsourceData.csv',parse_dates=['start','end'])
     # for comparing with latest records
 
     __subscribe_list = []
@@ -131,7 +132,7 @@ def run(engine: ScriptEngine):
             contracts_bool = initial_pos['vt_symbol'].str.contains('&')
             current_pos = initial_pos[~contracts_bool]
 
-            futures_pnl = current_pos['pnl'].sum()
+            futures_pnl = bal - outsource_df.loc[0]['presettle_futures']
             # current_pos_str = current_pos.to_json(
             #     orient='columns', force_ascii=False)
             if not (current_pos is None):
@@ -142,8 +143,8 @@ def run(engine: ScriptEngine):
                     x for x in current_contract if x not in __subscribe_list]
                 if len(diff_contract) > 0:
                     engine.subscribe(vt_symbols=diff_contract)
-                    __subscribe_list[:] = current_contract[:]
-                    sleep(1)
+                    __subscribe_list.extend(current_contract)
+                    sleep(2)
 
                 # 获取持仓信息： 手数 与 最新价
                 latest_prices = engine.get_ticks(vt_symbols=__subscribe_list, use_df=True)[
