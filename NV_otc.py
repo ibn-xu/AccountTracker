@@ -64,15 +64,15 @@ class NetValue(threading.Thread):
 
         return pnl_sum
 
-    def get_pnl(self):
+    def get_pnl(self,account='CTP.990175'):
         '''
         get pnl from influxdb
         '''
-        return dbmanager.get_pnl()
+        return dbmanager.get_pnl(account)
         
 
     def save_nv(self):
-        print(self.current_nv)
+        # print(self.current_nv)
         dbmanager.update_nv('jinshan',self.current_nv)
     
     def run(self):

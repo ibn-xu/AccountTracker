@@ -21,6 +21,10 @@ cn_calendar = trading_calendars.get_calendar('XSHG')
 # sessions is datetime.date
 sessions = [x.to_pydatetime().date() for x in cn_calendar.all_sessions]
 
+try:
+    outsource_df = pd.read_csv('outsourceData.csv',parse_dates=['start','end'])
+except:
+    outsource_df = None
 
 def option_picker(s: str):
     '''
@@ -100,7 +104,6 @@ def run(engine: ScriptEngine):
 
     """
 
-    outsource_df = pd.read_csv('outsourceData.csv',parse_dates=['start','end'])
     # for comparing with latest records
 
     __subscribe_list = []
@@ -132,7 +135,10 @@ def run(engine: ScriptEngine):
             contracts_bool = initial_pos['vt_symbol'].str.contains('&')
             current_pos = initial_pos[~contracts_bool]
 
-            futures_pnl = bal - outsource_df.loc[0]['presettle_futures']
+            if outsource_df is None:
+                futures_pnl = 0.0
+            else:
+                futures_pnl = bal - outsource_df.loc[0]['presettle_futures']
             # current_pos_str = current_pos.to_json(
             #     orient='columns', force_ascii=False)
             if not (current_pos is None):

@@ -58,7 +58,7 @@ class BaseDBManager(ABC):
         pass
 
     @abstractmethod
-    def get_pnl(self):
+    def get_pnl(self,account):
         '''
         get latet pnl
         '''

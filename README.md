@@ -3,6 +3,8 @@ classes for recording financial account data, compute ratios, save to databases
 
 NOTE: currently tracking *CTP*  accounts in *basic* data.
 
+- 'database/settings.py' needs to be sepcified.
+
 ## basic 
 
 Basic information records **regularly**.
@@ -62,6 +64,8 @@ records order when orders are sent.
 
 # OTC pnl & Net value : NV_otc.py
 
+- 'outsourceData.csv' need to be sepcified: refer to a sepcified file.
+
 ## OTC pnl
 
 - read position table:
@@ -77,4 +81,6 @@ records order when orders are sent.
 
 
 # Net Value Alarm:
+
+read net value data, alarm according to pre-sepcified conditions.
 

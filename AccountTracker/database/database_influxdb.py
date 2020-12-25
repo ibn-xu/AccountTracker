@@ -214,12 +214,13 @@ class InfluxManager(BaseDBManager):
             data.append(d['nv'])
         return data
 
-    def get_pnl(self):
+    def get_pnl(self,account):
         '''
         返回的是[dict]
         '''
         query_str = ("select pnl from account_basic "
-                     f"where time >= now()-15m;"
+                     f"where account='{account}' and "
+                     "time >= now()-15m;"
                      )
 
         result = self.influx_client.query(query_str)
