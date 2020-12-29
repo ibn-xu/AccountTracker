@@ -20,6 +20,7 @@ class BasicData():
     EN_sym: float   #   0
     pnl: float
     option_pnl : float
+    option_balance :float
 
 
 

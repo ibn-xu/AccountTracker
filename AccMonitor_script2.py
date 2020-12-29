@@ -7,6 +7,7 @@ from vnpy.trader.constant import Direction
 import pandas as pd
 from AccountTracker.database.database_influxdb import init
 from AccountTracker.settings import database_set
+from AccountTracker.settings import acc_folder
 
 
 DAY_END = datetime.time(15, 15)
@@ -22,7 +23,8 @@ cn_calendar = trading_calendars.get_calendar('XSHG')
 sessions = [x.to_pydatetime().date() for x in cn_calendar.all_sessions]
 
 try:
-    outsource_df = pd.read_csv('outsourceData.csv',parse_dates=['start','end'])
+    outsource_df = pd.read_csv(acc_folder['jinshan'],
+                              parse_dates=['start', 'end'])
 except:
     outsource_df = None
 
@@ -38,7 +40,7 @@ def option_picker(s: str):
         return None
     if len(s) > 12:
         # options
-        print('场内期权', s)
+        # print('场内期权', s)
         return s
 
 
@@ -113,6 +115,7 @@ def run(engine: ScriptEngine):
 
         futures_pnl = 0.0
         option_pnl = 0.0
+        option_balance = 0.0
 
         if all_contract.empty:
             all_contract = engine.get_all_contracts(
@@ -197,6 +200,8 @@ def run(engine: ScriptEngine):
                             posdir = 0
                         
                         option_pnl +=(tick.last_price - row['price']) * row['volume'] * posdir * contract_size[row['vt_symbol']]
+                        # 这里没考虑过卖出期权的的情况，应该是适合的：卖出期权，权利金到期货账户上,期权账户权益为负
+                        option_balance += row['price'] * row['volume'] * posdir * contract_size[row['vt_symbol']]
 
 
             else:
@@ -229,7 +234,8 @@ def run(engine: ScriptEngine):
                                risk_ratio=risk_ratio, 
                                EN_sym=EN_sym,
                                pnl=futures_pnl,
-                               option_pnl=option_pnl)
+                               option_pnl=option_pnl,
+                               option_balance=option_balance)
 
       # order & trade data
         order_dict = engine.main_engine.engines['oms'].orders.copy()

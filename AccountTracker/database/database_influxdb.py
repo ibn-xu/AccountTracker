@@ -71,7 +71,7 @@ class InfluxManager(BaseDBManager):
                 self.available = v.available
                 self.balance = v.balance
 
-    def update_basic(self, mkv, risk_ratio, EN_sym=0.0, pnl=0.0, option_pnl=0.0):
+    def update_basic(self, mkv, risk_ratio, EN_sym=0.0, pnl=0.0, option_pnl=0.0, option_balance=0.0):
 
         # unable to group positions to accounts...
         tmp_basic = BasicData(
@@ -81,7 +81,8 @@ class InfluxManager(BaseDBManager):
             leverage=mkv/self.balance,
             EN_sym=EN_sym,
             pnl=pnl,
-            option_pnl=option_pnl
+            option_pnl=option_pnl,
+            option_balance=option_balance
         )
 
         d = {
@@ -214,11 +215,23 @@ class InfluxManager(BaseDBManager):
             data.append(d['nv'])
         return data
 
-    def get_pnl(self,account):
+    def get_pnl(self, account):
         '''
         返回的是[dict]
         '''
-        query_str = ("select pnl from account_basic "
+        return self.get_data(account, fieldname='pnl', measurement='account_basic')
+
+    def get_optionBalance(self, account):
+        '''
+        '''
+        return self.get_data(account, 'option_balance', 'account_basic')
+
+    def get_data(self, account, fieldname, measurement):
+        '''
+        return latest data of selected field.
+        '''
+
+        query_str = (f"select {fieldname} from {measurement} "
                      f"where account='{account}' and "
                      "time >= now()-15m;"
                      )
@@ -228,7 +241,7 @@ class InfluxManager(BaseDBManager):
 
         pnlData = []
         for p in points:
-            pnlData.append(p['pnl'])
+            pnlData.append(p[fieldname])
 
         if pnlData:
             return pnlData[-1]

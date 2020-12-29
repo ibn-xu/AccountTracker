@@ -1,0 +1,4 @@
+name,target,type,suggestion
+盈利清盘,1.15,above,清仓
+回撤区间50%,0.981,below,减半
+回撤区间100%,0.971,below,清仓

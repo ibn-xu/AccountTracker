@@ -11,15 +11,19 @@ database_set = {
 
 }
 
-nv_list = ['jinshan']
+product_list = ['jinshan']
 
-nv_settings = {
+product_accounts = {
     'jinshan': [
         'CTP.990175',
     ]
 }
 
+product_alarm = {
+    'jinshan':'alarm_setting.csv'
+
+}
 
 acc_folder = {
-    'CTP.990175': '/home/q123'
+    'jinshan': 'outsourceData.csv'
 }
