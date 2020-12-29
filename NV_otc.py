@@ -23,7 +23,9 @@ class NetValue(threading.Thread):
         self.alarm_tool = SMSAlarm()
         self.api = TqApi(None, TqAuth('18516580770', '660818'))
         # 15:00 ~ 15:15 record and night
-        self.quote_list = ['KQ.m@CFFEX.T', 'KQ.m@SHFE.au']
+        self.quote_list = []
+        self.quote_list.append(self.api.get_quote('KQ.m@CFFEX.T'))
+        self.quote_list.append(self.api.get_quote('KQ.m@SHFE.au'))
         for _, row in self.df.iterrows():
             self.quote_list.append(self.api.get_quote(row['underlying']))
         self.otc_pre = self.otc_sum('presettle')
@@ -77,8 +79,13 @@ class NetValue(threading.Thread):
 
         pnl_sum = 0.0
         for ix, row in self.df.iterrows():
+
+            for tick in self.quote_list:
+                if tick.instrument_id == row['underlying']:
+                    s = getattr(tick,price_str)
+
             price_i = black76.calculate_price(
-                getattr(self.quote_list[ix], price_str),
+                s,
                 row['k'],
                 0.05,
                 row['t'],
