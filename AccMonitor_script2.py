@@ -1,10 +1,10 @@
 from time import sleep
 import pathlib
 import datetime
+import pandas as pd
 import trading_calendars
 from vnpy.app.script_trader import ScriptEngine
 from vnpy.trader.constant import Direction
-import pandas as pd
 from AccountTracker.database.database_influxdb import init
 from AccountTracker.settings import database_set
 from AccountTracker.settings import acc_folder
@@ -24,9 +24,10 @@ sessions = [x.to_pydatetime().date() for x in cn_calendar.all_sessions]
 
 try:
     outsource_df = pd.read_csv(acc_folder['jinshan'],
-                              parse_dates=['start', 'end'])
+                               parse_dates=['start', 'end'])
 except:
     outsource_df = None
+
 
 def option_picker(s: str):
     '''
@@ -116,12 +117,15 @@ def run(engine: ScriptEngine):
         futures_pnl = 0.0
         option_pnl = 0.0
         option_balance = 0.0
+        mkv_long = 0.0
+        mkv_short = 0.0
 
         if all_contract.empty:
             all_contract = engine.get_all_contracts(
                 True)[['vt_symbol', 'size']]
-            
-            contract_size = dict(zip(all_contract['vt_symbol'],all_contract['size']))
+
+            contract_size = dict(
+                zip(all_contract['vt_symbol'], all_contract['size']))
         # 主观策略用统一的ID
         # 程序化交易各自有id区分
 
@@ -155,40 +159,42 @@ def run(engine: ScriptEngine):
                     __subscribe_list.extend(current_contract)
                     sleep(2)
 
-                # 获取持仓信息： 手数 与 最新价
-                latest_prices = engine.get_ticks(vt_symbols=__subscribe_list, use_df=True)[
-                    ['last_price', 'vt_symbol']]
-                while not latest_prices.all().all():
-                    sleep(0.2)
-                    latest_prices = engine.get_ticks(vt_symbols=__subscribe_list, use_df=True)[
-                        ['last_price', 'vt_symbol']]
+                # # 获取持仓信息： 手数 与 最新价
+                # latest_prices = engine.get_ticks(vt_symbols=__subscribe_list, use_df=True)[
+                #     ['last_price', 'vt_symbol']]
+                # while not latest_prices.all().all():
+                #     sleep(0.2)
+                #     latest_prices = engine.get_ticks(vt_symbols=__subscribe_list, use_df=True)[
+                #         ['last_price', 'vt_symbol']]
 
-                latest_volumns = current_pos[[
-                    'vt_symbol', 'volume', 'direction']]
+                # latest_volumns = current_pos[[
+                #     'vt_symbol', 'volume', 'direction']]
 
-                tmp_df = pd.merge(
-                    left=latest_prices, right=latest_volumns, on='vt_symbol', how='inner')
-                final_df = pd.merge(
-                    left=tmp_df, right=all_contract, on='vt_symbol', how='inner')
-                final_df['mk_value'] = final_df['last_price'] * \
-                    final_df['volume'] * final_df['size']
-                local_mkvalue = final_df['mk_value'].sum()
+                # tmp_df = pd.merge(
+                #     left=latest_prices, right=latest_volumns, on='vt_symbol', how='inner')
+                # final_df = pd.merge(
+                #     left=tmp_df, right=all_contract, on='vt_symbol', how='inner')
+                # final_df['mk_value'] = final_df['last_price'] * \
+                #     final_df['volume'] * final_df['size']
+                # local_mkvalue = final_df['mk_value'].sum()
 
                 # EN calculate
 
-                final_df['weights'] = final_df['mk_value'] / local_mkvalue
+                # final_df['weights'] = final_df['mk_value'] / local_mkvalue
 
-                s = 0
+                # s = 0
 
-                for f in final_df['weights']:
-                    s += f**2
-                if s > 0:
-                    EN_sym = 1 / s
+                # for f in final_df['weights']:
+                #     s += f**2
+                # if s > 0:
+                #     EN_sym = 1 / s
 
                 # return local_mkvalue
+                weights =[]
+                mkv_li = []
 
-                # option_pnl calculate
-                for ix,row in current_pos.iterrows():
+                # option_pnl calculate ; mkv cal
+                for ix, row in current_pos.iterrows():
                     if option_picker(row['vt_symbol']):
                         tick = engine.get_tick(row['vt_symbol'])
 
@@ -198,14 +204,33 @@ def run(engine: ScriptEngine):
                             posdir = -1
                         else:
                             posdir = 0
-                        
-                        option_pnl +=(tick.last_price - row['price']) * row['volume'] * posdir * contract_size[row['vt_symbol']]
-                        # 这里没考虑过卖出期权的的情况，应该是适合的：卖出期权，权利金到期货账户上,期权账户权益为负
-                        option_balance += row['price'] * row['volume'] * posdir * contract_size[row['vt_symbol']]
 
+                        option_pnl += (tick.last_price - row['price']) * \
+                            row['volume'] * posdir * \
+                            contract_size[row['vt_symbol']]
+                        # 这里没考虑过卖出期权的的情况，应该是适合的：卖出期权，权利金到期货账户上,期权账户权益为负
+                        option_balance += row['price'] * row['volume'] * \
+                            posdir * contract_size[row['vt_symbol']]
+                    else:
+                        # futures contract
+                        tick = engine.get_tick(row['vt_symbol'])
+
+                        tmp_mkv = tick.last_price * \
+                            row['volume'] * contract_size[row['vt_symbol']]
+                        mkv_li.append(tmp_mkv)
+                        if row['direction'] == Direction.LONG:
+                            mkv_long += tmp_mkv 
+                        elif row['direction'] == Direction.SHORT:
+                            mkv_short +=  tmp_mkv
+
+                local_mkvalue = mkv_long + mkv_short
+                weights = [i / local_mkvalue for i in mkv_li]
+
+                EN_sym = 1 / sum([i **2 for i in weights])
+                
 
             else:
-                local_mkvalue = 0
+                local_mkvalue = 0.0
 
             # risk_ratio
             holding_pnl = sum([a.pnl for (_, a) in current_pos.iterrows()])
@@ -216,7 +241,6 @@ def run(engine: ScriptEngine):
                 risk_ratio = risk_ratio1
             else:
                 risk_ratio = risk_ratio2
-
 
         else:
             # no position holing
@@ -231,7 +255,9 @@ def run(engine: ScriptEngine):
         # basic data
         # pos_dict = engine.main_engine.engines['oms'].positions.copy()
         dbmanager.update_basic(mkv=local_mkvalue,
-                               risk_ratio=risk_ratio, 
+                               mkv_long=mkv_long,
+                               mkv_short=mkv_short,
+                               risk_ratio=risk_ratio,
                                EN_sym=EN_sym,
                                pnl=futures_pnl,
                                option_pnl=option_pnl,

@@ -12,12 +12,15 @@ Including:
 
 - balance
 - mkv
+- mkv_long
+- mkv_short
 - leverage (mkv / balance)
 - risk ratio
 - EN_sym(effective number of symbols)
 - ~~EN_sec(effective number of sectors)~~
 - pnl : floating gain/loss of futures
 - option_pnl : floating gain/loss of options
+- option_balance: option asset calculated by latest price
 
 
 

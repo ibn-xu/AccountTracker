@@ -14,6 +14,8 @@ class BasicData():
     
     balance : float   # 1
     mkv : float   #  1
+    mkv_long : float   #  1
+    mkv_short : float   #  1
     leverage : float   #  0
     # holding positions is needed for calculate indicators below
     risk_ratio: float   #  0

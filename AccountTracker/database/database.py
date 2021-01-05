@@ -35,7 +35,7 @@ class BaseDBManager(ABC):
         pass
 
     @abstractmethod
-    def update_basic(self, mkv, risk_ratio, EN_sym=0.0, pnl=0.0, option_pnl=0.0,option_balance=0.0):
+    def update_basic(self, mkv,mkv_long,mkv_short, risk_ratio, EN_sym=0.0, pnl=0.0, option_pnl=0.0,option_balance=0.0):
         pass
 
     @abstractmethod
