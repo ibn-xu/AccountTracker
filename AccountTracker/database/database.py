@@ -35,7 +35,16 @@ class BaseDBManager(ABC):
         pass
 
     @abstractmethod
-    def update_basic(self, mkv,mkv_long,mkv_short, risk_ratio, EN_sym=0.0, pnl=0.0, option_pnl=0.0,option_balance=0.0):
+    def update_basic(self, mkv, mkv_long, mkv_short, risk_ratio, EN_sym=0.0, pnl=0.0, option_pnl=0.0, option_balance=0.0,
+                     mkv_agri=0.0,
+                     mkv_bond=0.0,
+                     mkv_stock=0.0,
+                     mkv_metal=0.0,
+                     mkv_gold=0.0,
+                     mkv_energy=0.0,
+                     mkv_black=0.0,
+
+                     ):
         pass
 
     @abstractmethod
@@ -58,7 +67,7 @@ class BaseDBManager(ABC):
         pass
 
     @abstractmethod
-    def get_pnl(self,account):
+    def get_pnl(self, account):
         '''
         get latet pnl
         '''

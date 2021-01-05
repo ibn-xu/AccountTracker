@@ -71,7 +71,19 @@ class InfluxManager(BaseDBManager):
                 self.available = v.available
                 self.balance = v.balance
 
-    def update_basic(self, mkv,mkv_long,mkv_short, risk_ratio, EN_sym=0.0, pnl=0.0, option_pnl=0.0, option_balance=0.0):
+    def update_basic(self, mkv, mkv_long, mkv_short, risk_ratio, EN_sym=0.0, pnl=0.0, option_pnl=0.0, option_balance=0.0,
+
+                     mkv_agri=0.0,
+                     mkv_bond=0.0,
+                     mkv_stock=0.0,
+                     mkv_metal=0.0,
+                     mkv_gold=0.0,
+                     mkv_energy=0.0,
+                     mkv_black=0.0,
+
+
+
+                     ):
 
         # unable to group positions to accounts...
         tmp_basic = BasicData(
@@ -79,6 +91,13 @@ class InfluxManager(BaseDBManager):
             mkv=mkv,
             mkv_long=mkv_long,
             mkv_short=mkv_short,
+            mkv_agri=mkv_agri,
+            mkv_bond=mkv_bond,
+            mkv_stock=mkv_stock,
+            mkv_metal=mkv_metal,
+            mkv_gold=mkv_gold,
+            mkv_energy=mkv_energy,
+            mkv_black=mkv_black,
             risk_ratio=risk_ratio,
             leverage=mkv/self.balance,
             EN_sym=EN_sym,

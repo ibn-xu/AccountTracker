@@ -28,6 +28,22 @@ try:
 except:
     outsource_df = None
 
+# for sector mkv cal
+sector = pd.read_csv('AccountTracker/sectors.csv', header=None)
+sector_map = dict(zip(sector.iloc[:, 1], sector.iloc[:, 2]))
+
+
+def get_sym(s: str):
+    '''
+    rb2105 => rb
+    '''
+    a = 0
+    for c in s:
+        if c.isdigit():
+            break
+        a += 1
+    return s[:a]
+
 
 def option_picker(s: str):
     '''
@@ -39,10 +55,11 @@ def option_picker(s: str):
 
     if '&' in s:
         return None
-    if len(s) > 12:
+    elif len(s) > 12:
         # options
         # print('场内期权', s)
         return s
+    return None
 
 
 def tradeTime_TRANS(dd: dict):
@@ -119,6 +136,13 @@ def run(engine: ScriptEngine):
         option_balance = 0.0
         mkv_long = 0.0
         mkv_short = 0.0
+        mkv_agri = 0.0
+        mkv_bond = 0.0
+        mkv_stock = 0.0
+        mkv_metal = 0.0
+        mkv_gold = 0.0
+        mkv_energy = 0.0
+        mkv_black = 0.0
 
         if all_contract.empty:
             all_contract = engine.get_all_contracts(
@@ -159,38 +183,8 @@ def run(engine: ScriptEngine):
                     __subscribe_list.extend(current_contract)
                     sleep(2)
 
-                # # 获取持仓信息： 手数 与 最新价
-                # latest_prices = engine.get_ticks(vt_symbols=__subscribe_list, use_df=True)[
-                #     ['last_price', 'vt_symbol']]
-                # while not latest_prices.all().all():
-                #     sleep(0.2)
-                #     latest_prices = engine.get_ticks(vt_symbols=__subscribe_list, use_df=True)[
-                #         ['last_price', 'vt_symbol']]
-
-                # latest_volumns = current_pos[[
-                #     'vt_symbol', 'volume', 'direction']]
-
-                # tmp_df = pd.merge(
-                #     left=latest_prices, right=latest_volumns, on='vt_symbol', how='inner')
-                # final_df = pd.merge(
-                #     left=tmp_df, right=all_contract, on='vt_symbol', how='inner')
-                # final_df['mk_value'] = final_df['last_price'] * \
-                #     final_df['volume'] * final_df['size']
-                # local_mkvalue = final_df['mk_value'].sum()
-
-                # EN calculate
-
-                # final_df['weights'] = final_df['mk_value'] / local_mkvalue
-
-                # s = 0
-
-                # for f in final_df['weights']:
-                #     s += f**2
-                # if s > 0:
-                #     EN_sym = 1 / s
-
                 # return local_mkvalue
-                weights =[]
+                weights = []
                 mkv_li = []
 
                 # option_pnl calculate ; mkv cal
@@ -219,15 +213,59 @@ def run(engine: ScriptEngine):
                             row['volume'] * contract_size[row['vt_symbol']]
                         mkv_li.append(tmp_mkv)
                         if row['direction'] == Direction.LONG:
-                            mkv_long += tmp_mkv 
+                            mkv_long += tmp_mkv
                         elif row['direction'] == Direction.SHORT:
-                            mkv_short +=  tmp_mkv
+                            mkv_short += tmp_mkv
+                        
+                        # sector mkv
+                        tmp_sym = get_sym(row['symbol'])
+                        tmp_sec = sector_map.get(tmp_sym,'')
+
+                        if tmp_sec == '农产品':
+
+                            if row['direction'] == Direction.LONG:
+                                mkv_agri += tmp_mkv
+                            elif row['direction'] == Direction.SHORT:
+                                mkv_agri -= tmp_mkv
+                        elif tmp_sec == '债券':
+                            if row['direction'] == Direction.LONG:
+                                mkv_bond += tmp_mkv
+                            elif row['direction'] == Direction.SHORT:
+                                mkv_bond -= tmp_mkv
+                        elif tmp_sec == '股指':
+                            if row['direction'] == Direction.LONG:
+                                mkv_stock += tmp_mkv
+                            elif row['direction'] == Direction.SHORT:
+                                mkv_stock -= tmp_mkv
+                        elif tmp_sec == '能源':
+                            if row['direction'] == Direction.LONG:
+                                mkv_energy += tmp_mkv
+                            elif row['direction'] == Direction.SHORT:
+                                mkv_energy -= tmp_mkv
+                        elif tmp_sec == '有色':
+                            if row['direction'] == Direction.LONG:
+                                mkv_metal += tmp_mkv
+                            elif row['direction'] == Direction.SHORT:
+                                mkv_metal -= tmp_mkv
+                        elif tmp_sec == '贵金属':
+                            if row['direction'] == Direction.LONG:
+                                mkv_gold += tmp_mkv
+                            elif row['direction'] == Direction.SHORT:
+                                mkv_gold -= tmp_mkv
+                        elif tmp_sec == '黑色':
+                            if row['direction'] == Direction.LONG:
+                                mkv_black += tmp_mkv
+                            elif row['direction'] == Direction.SHORT:
+                                mkv_black -= tmp_mkv
+                        else:
+                            # unknown sectors
+                            print(f'Unknown sectors!! {tmp_sym}')
+
 
                 local_mkvalue = mkv_long + mkv_short
                 weights = [i / local_mkvalue for i in mkv_li]
 
-                EN_sym = 1 / sum([i **2 for i in weights])
-                
+                EN_sym = 1 / sum([i ** 2 for i in weights])
 
             else:
                 local_mkvalue = 0.0
@@ -257,6 +295,13 @@ def run(engine: ScriptEngine):
         dbmanager.update_basic(mkv=local_mkvalue,
                                mkv_long=mkv_long,
                                mkv_short=mkv_short,
+                               mkv_agri=mkv_agri,
+                               mkv_bond=mkv_bond,
+                               mkv_stock=mkv_stock,
+                               mkv_metal=mkv_metal,
+                               mkv_gold=mkv_gold,
+                               mkv_energy=mkv_energy,
+                               mkv_black=mkv_black,
                                risk_ratio=risk_ratio,
                                EN_sym=EN_sym,
                                pnl=futures_pnl,
