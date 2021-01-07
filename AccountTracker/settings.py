@@ -27,3 +27,5 @@ product_alarm = {
 acc_folder = {
     'jinshan': 'outsourceData.csv'
 }
+
+sector_file = 'AccountTracker/sectors.csv'

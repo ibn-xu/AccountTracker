@@ -7,7 +7,6 @@ from ..objects import (
     OrderData,
     AccountData
 )
-from .database import DB_TZ
 
 
 def init(_: Driver, settings) -> BaseDBManager:

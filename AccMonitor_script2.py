@@ -6,8 +6,7 @@ import trading_calendars
 from vnpy.app.script_trader import ScriptEngine
 from vnpy.trader.constant import Direction
 from AccountTracker.database.database_influxdb import init
-from AccountTracker.settings import database_set
-from AccountTracker.settings import acc_folder
+from AccountTracker.settings import database_set, acc_folder, sector_file
 
 
 DAY_END = datetime.time(15, 15)
@@ -29,7 +28,7 @@ except:
     outsource_df = None
 
 # for sector mkv cal
-sector = pd.read_csv('AccountTracker/sectors.csv', header=None)
+sector = pd.read_csv(sector_file, header=None)
 sector_map = dict(zip(sector.iloc[:, 1], sector.iloc[:, 2]))
 
 
@@ -216,10 +215,10 @@ def run(engine: ScriptEngine):
                             mkv_long += tmp_mkv
                         elif row['direction'] == Direction.SHORT:
                             mkv_short += tmp_mkv
-                        
+
                         # sector mkv
                         tmp_sym = get_sym(row['symbol'])
-                        tmp_sec = sector_map.get(tmp_sym,'')
+                        tmp_sec = sector_map.get(tmp_sym, '')
 
                         if tmp_sec == '农产品':
 
@@ -237,7 +236,7 @@ def run(engine: ScriptEngine):
                                 mkv_stock += tmp_mkv
                             elif row['direction'] == Direction.SHORT:
                                 mkv_stock -= tmp_mkv
-                        elif tmp_sec == '能源':
+                        elif tmp_sec == '能化':
                             if row['direction'] == Direction.LONG:
                                 mkv_energy += tmp_mkv
                             elif row['direction'] == Direction.SHORT:
@@ -260,7 +259,6 @@ def run(engine: ScriptEngine):
                         else:
                             # unknown sectors
                             print(f'Unknown sectors!! {tmp_sym}')
-
 
                 local_mkvalue = mkv_long + mkv_short
                 weights = [i / local_mkvalue for i in mkv_li]

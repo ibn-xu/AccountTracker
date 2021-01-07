@@ -72,3 +72,4 @@ class BaseDBManager(ABC):
         get latet pnl
         '''
         pass
+
