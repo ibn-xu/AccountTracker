@@ -22,8 +22,8 @@ cn_calendar = trading_calendars.get_calendar('XSHG')
 sessions = [x.to_pydatetime().date() for x in cn_calendar.all_sessions]
 
 try:
-    outsource_df = pd.read_csv(acc_folder['jinshan'],
-                               parse_dates=['start', 'end'])
+    p = pathlib.Path(acc_folder['jinshan'])
+    outsource_df = pd.read_csv(p.name, parse_dates=['start', 'end'])
 except:
     outsource_df = None
 

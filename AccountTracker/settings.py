@@ -24,6 +24,7 @@ product_alarm = {
 
 }
 
+# csv file is expected to be under account file, path here is absolute path.
 acc_folder = {
     'jinshan': 'outsourceData.csv'
 }
