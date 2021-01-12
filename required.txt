@@ -1,0 +1,4 @@
+vnpy
+pip install tencentcloud-sdk-python
+pip install trading-calendars
+pip install tqsdk

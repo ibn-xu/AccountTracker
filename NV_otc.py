@@ -62,14 +62,14 @@ class NetValue(threading.Thread):
                     msg = f'''{row['name']}:, 建议{row['suggestion']}'''
                     temp1 = row['name']
                     temp2 = f''' 径山净值已超出 {row['target']} '''
-                    self.alarm_tool.send(msg, template=[temp1, temp2])
+                    self.alarm_tool.send(name=row['name'], msg=msg, template=[temp1, temp2])
 
             elif row['type'] == 'below':
                 if nv < row['target']:
                     msg = f'''{row['name']}:径山净值已跌破 {row['target']}, 建议{row['suggestion']}'''
                     temp1 = row['name']
                     temp2 = f''' 径山净值已跌破 {row['target']} '''
-                    self.alarm_tool.send(msg, template=[temp1, temp2])
+                    self.alarm_tool.send(name=row['name'], msg=msg, template=[temp1, temp2])
 
     def otc_sum(self, obj=''):
         if obj == 'presettle':
@@ -82,7 +82,7 @@ class NetValue(threading.Thread):
 
             for tick in self.quote_list:
                 if tick.instrument_id == row['underlying']:
-                    s = getattr(tick,price_str)
+                    s = getattr(tick, price_str)
 
             price_i = black76.calculate_price(
                 s,

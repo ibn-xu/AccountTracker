@@ -10,12 +10,18 @@ from tencentcloud.sms.v20190711 import sms_client, models
 from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
 
+
 class SMSAlarm(BaseAlarm):
 
     def __init__(self):
-        pass
+        self.sent_name = set()
 
-    def send(self, msg: str='',template:list = ['预警测试','超出回撤区间50%']):
+    def send(self, name, msg: str = '', template: list = ['预警测试', '超出回撤区间50%']):
+
+        if name in self.sent_name:
+            return
+
+        self.sent_name.add(name)
 
         try:
             # 必要步骤：
@@ -24,7 +30,8 @@ class SMSAlarm(BaseAlarm):
             # 您也可以直接在代码中写入密钥对，但需谨防泄露，不要将代码复制、上传或者分享给他人
             # CAM 密钥查询：https://console.cloud.tencent.com/cam/capi
 
-            cred = credential.Credential(SMS_setting['secretId'], SMS_setting['secretKey'])
+            cred = credential.Credential(
+                SMS_setting['secretId'], SMS_setting['secretKey'])
             # cred = credential.Credential(
             #     os.environ.get(""),
             #     os.environ.get("")
@@ -78,7 +85,6 @@ class SMSAlarm(BaseAlarm):
             # 模板参数: 若无模板参数，则设置为空
             req.TemplateParamSet = template
 
-
             # 通过 client 对象调用 SendSms 方法发起请求。注意请求方法名与请求对象是对应的
             resp = client.SendSms(req)
 
@@ -88,5 +94,3 @@ class SMSAlarm(BaseAlarm):
         except TencentCloudSDKException as err:
             print('error!')
             print(err)
-
-
