@@ -137,7 +137,7 @@ def run_parent(parent_interval=120,  run_type='sim'):
     msg = "***************************启动nv数据记录守护父进程****************************"
     print(msg)
     # Chinese futures market trading period (day/night)
-    DAY_START = datetime.time(8, 55)
+    DAY_START = datetime.time(8, 57)
     DAY_END = datetime.time(11, 35)
 
     DAY_START2 = datetime.time(12, 55)

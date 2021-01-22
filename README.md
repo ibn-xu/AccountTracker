@@ -87,3 +87,10 @@ records order when orders are sent.
 
 read net value data, alarm according to pre-sepcified conditions.
 
+
+# alarm_gen.py
+
+script for generate *alarm_setting.csv*, has two params: *update* and  *reset*
+
+- update for updating latest net value, and generate related csv.
+- retset for start from scrach besed on given net value.

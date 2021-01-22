@@ -1,4 +1,6 @@
 name,target,type,suggestion
-盈利清盘,1.15,above,清仓
-回撤区间50%,0.981,below,减半
-回撤区间100%,0.971,below,清仓
+盈利清盘,1.1503,above,清仓
+half,1.0002,below,--
+quarter,0.9954000000000001,below,仓位减半
+clear,0.9908,below,清仓
+聚餐,1.0052,above,oo
