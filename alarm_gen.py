@@ -54,12 +54,19 @@ def __getTarget(nv, product_class: ProductType):
 def update(nv, df: pd.DataFrame, product):
     df = df.copy()
     mdd = __getTarget(nv, PRODUCTTABLE[product]) / 100
+    quater_flag = False
     for ix, row in df.iterrows():
         if row['name'] in ('half', 'quarter', 'clear'):
             if row['name'] == 'half':
                 tmp_lvl = nv - mdd * 0.49
+                if nv > row['target']:
+                    quater_flag = True
             elif row['name'] == 'quarter':
                 tmp_lvl = nv - mdd * 0.73
+                if quater_flag:
+                    row['type'] = 'below'
+                    df.loc[ix] = row
+
             elif row['name'] == 'clear':
                 tmp_lvl = nv - mdd * 0.96
 
